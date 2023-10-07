@@ -10,10 +10,12 @@ void test_integral_increase(void)
 
     controller.update(60.0, 1.0);
     int i1 = controller.get_integral();
-    controller.update(60.0, 20.0);
+    for (int i = 0; i < 100; i++) {
+        controller.update(60.0, 20.0);
+    }
     int i2 = controller.get_integral();
 
-    TEST_ASSERT_LESS_THAN_INT(i1, i2);
+    TEST_ASSERT_LESS_THAN_INT(i2, i1);
 
 }
 
@@ -26,6 +28,7 @@ void test_integral_saturation(void)
     float actual = 1.0;
     int count = 0;
 
+    int i0 = controller.get_integral();
     controller.update(1,0.1);
 
     while (count < 100) {
@@ -39,6 +42,7 @@ void test_integral_saturation(void)
     int i2 = controller.get_integral();
 
     TEST_ASSERT_EQUAL(i1,i2);
+    TEST_ASSERT_NOT_EQUAL(i1,i0);
 }
 
 

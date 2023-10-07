@@ -9,7 +9,6 @@ public:
 class P_controller : public Controller {
 public:
     P_controller(double Kp) : Kp(Kp) {}
-
     double update(double ref, double actual) override {
         double error = ref - actual;
         double u = Kp * error;
