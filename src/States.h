@@ -12,7 +12,7 @@ class Initialization : public State {
 
     void on_do() override
     {
-
+        on_entry();
     }
     void on_entry() override
     {
@@ -26,6 +26,7 @@ class Initialization : public State {
         op = true;
         Serial.println("Setting FLT = false");
         flt = false;
+        this->context_->command_go();
         
     }
     void on_exit() override
@@ -34,6 +35,8 @@ class Initialization : public State {
     }
     void on_command_go() override
     {
+        Serial.println("IN:op = true - We are operational");
+        this->context_->transition_to(new PreOperational);
     }
 
     void on_command_stop() override
@@ -57,6 +60,12 @@ class PreOperational : public State
         c = '0';
         Serial.println("Reading into c from keyboard");
         c = Serial.read();
+        if (c == 'o' || c == 'r'){
+            this->context_->command_go();
+        }
+        if (flt){
+            this->context_->command_stop();
+        }
     }
     void on_entry() override
     {
@@ -71,13 +80,26 @@ class PreOperational : public State
     }
     void on_command_go() override
     {
+        Serial.println("PRE:Leaving pre");
+        if (c == 'o'){
+            Serial.println("Going to OP");
+            this->context_->transition_to(new Operational);
+        } 
+        if (c == 'r'){
+            Serial.println("Going to IN");
+            this->context_->transition_to(new Initialization);
+        }
     }
 
     void on_command_stop() override
     {
+        Serial.println("PRE:Stop command detected - Stopping");
+        this->context_->transition_to(new Stopped);
     }
 
-    void on_timeout() override;
+    void on_timeout() override{
+        flt = true;
+    }
     // void on_event1();
     // void on_event2();
 };
@@ -93,6 +115,12 @@ class Operational : public State
         c = '0';
         Serial.println("Reading into c from keyboard");
         c = Serial.read();
+        if (c == 'p' || c == 'r'){
+            this->context_->command_go();
+        }
+        if (flt){
+            this->context_->command_stop();
+        }
     }
     void on_entry() override
     {
@@ -107,13 +135,26 @@ class Operational : public State
     }
     void on_command_go() override
     {
+        Serial.println("OP:Leaving OP");
+        if (c == 'p'){
+            Serial.println("Going to PRE");
+            this->context_->transition_to(new PreOperational);
+        } 
+        if (c == 'r'){
+            Serial.println("Going to IN");
+            this->context_->transition_to(new Initialization);
+        }
     }
 
     void on_command_stop() override
     {
+        Serial.println("OP:Stop command detected - Stopping");
+        this->context_->transition_to(new Stopped);
     }
 
-    void on_timeout() override;
+    void on_timeout() override{
+        flt = true;
+    }
     // void on_event1();
     // void on_event2();
 
@@ -127,6 +168,9 @@ class Stopped : public State {
         c = '0';
         Serial.println("Reading into c from keyboard");
         c = Serial.read();
+        if (c == 'c'){
+            this->context_->command_go();
+        }
     }
     void on_entry() override
     {
@@ -144,66 +188,18 @@ class Stopped : public State {
 
     void on_command_stop() override
     {
+        Serial.println("STO:Continue command detected - Continue");
+        if (pre){
+            this->context_->transition_to(new PreOperational);
+        } else{
+            this->context_->transition_to(new Operational);
+        }
     }
 
     void on_timeout() override;
     // void on_event1();
     // void on_event2();
 };
-
-// void Initialization::on_command_go()
-// {
-//     Serial.println("IN:op = true - We are operational");
-//     this->context_->transition_to(new PreOperational);
-// }
-
-void PreOperational::on_command_go()
-{
-    Serial.println("PRE:Leaving pre");
-    if (c == 'o'){
-        Serial.println("Going to OP");
-        this->context_->transition_to(new Operational);
-    } 
-    if (c == 'r'){
-        Serial.println("Going to IN");
-        this->context_->transition_to(new Initialization);
-    }
-}
-
-void PreOperational::on_command_stop()
-{
-    Serial.println("PRE:Stop command detected - Stopping");
-    this->context_->transition_to(new Stopped);
-}
-
-void Operational::on_command_go()
-{
-    Serial.println("OP:Leaving OP");
-    if (c == 'p'){
-        Serial.println("Going to PRE");
-        this->context_->transition_to(new PreOperational);
-    } 
-    if (c == 'r'){
-        Serial.println("Going to IN");
-        this->context_->transition_to(new Initialization);
-    }
-}
-
-void Operational::on_command_stop()
-{
-    Serial.println("OP:Stop command detected - Stopping");
-    this->context_->transition_to(new Stopped);
-}
-
-void Stopped::on_command_go()
-{
-    Serial.println("STO:Continue command detected - Continue");
-    if (pre){
-        this->context_->transition_to(new PreOperational);
-    } else{
-        this->context_->transition_to(new Operational);
-    }
-}
 
 
 
