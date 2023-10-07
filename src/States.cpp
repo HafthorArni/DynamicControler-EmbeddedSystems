@@ -89,7 +89,8 @@ void PreOperational::on_timeout(){
 }
 
 void Operational::on_do() 
-{
+{       
+        stateVars.flt = false;
         if (stateVars.faultPin.is_lo()){
             if (!stateVars.flt) {
                 stateVars.faultStartTime = millis();
@@ -99,9 +100,9 @@ void Operational::on_do()
             stateVars.flt = false;
         }
 
-        if (stateVars.flt && (millis() - stateVars.faultStartTime >= 100)) {
+        if (stateVars.flt && (millis() - stateVars.faultStartTime >= 1000)) {
             Serial.println("fault");
-            stateVars.flt = false;
+            stateVars.flt = true;
         }
 
 
@@ -109,7 +110,7 @@ void Operational::on_do()
         this->context_->command_go();
     }
     if (stateVars.flt){
-        this->context_->command_stop();
+        //this->context_->command_go();
     }
     stateVars.ref = (analogRead(stateVars.analogPin)/1023.0)*120;
     stateVars.actual = abs(stateVars.encoder.speed());
@@ -125,7 +126,7 @@ void Operational::on_do()
         Serial.print(stateVars.actual);
         Serial.print(") [RPM], ");
         Serial.print(" duty cycle: ");
-        Serial.print(stateVars.pwmValue);
+        Serial.println(stateVars.pwmValue);
         stateVars.lastPrintTime = millis();  
     }
     stateVars.encoder.update();
@@ -136,6 +137,7 @@ void Operational::on_entry()
     Serial.println("Turning on LED");
     //stateVars.led.set(0.9999);
     stateVars.pre = false;
+    stateVars.flt = false;
     stateVars.timer.init(0.1); // ms
     stateVars.encoder.init();
     stateVars.motorIN2.init();
@@ -176,25 +178,24 @@ void Operational::on_timeout()
 
 void Stopped::on_do() 
 {
+    stateVars.motorIN1.set(0.0000);
     if (stateVars.c == 'c'){
+        stateVars.flt = false;
         this->context_->command_go();
     }
 }
 void Stopped::on_entry() 
 {
-    stateVars.motorIN1.set(0.00001);
     Serial.println("Stopped! waiting for 'c'");
-    Serial.println("Blinking LED at 2 Hz");
+    stateVars.motorIN1.set(0.0000);
     //stateVars.led.set(0.2);
 }
 void Stopped::on_exit() 
 {
-    Serial.println("Setting flt = false");
     stateVars.flt = false;
 }
 void Stopped::on_command_go() 
 {
-    Serial.println("STO:Continue command detected - Continue");
     if (stateVars.pre){
         this->context_->transition_to(new PreOperational);
     } else{
