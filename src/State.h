@@ -1,4 +1,5 @@
-#pragma once
+#ifndef STATE_H
+#define STATE_H
 #include <Context.h>
 
 class Context; // Forward declaration of context
@@ -28,3 +29,5 @@ public:
   // ...
 
 };
+
+#endif

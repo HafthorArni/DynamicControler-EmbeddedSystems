@@ -1,3 +1,6 @@
+#ifndef PI_CONTROLLER_H
+#define PI_CONTROLLER_H
+
 class PI_controller {
   public:
     PI_controller(double Kp,double Ti) : Kp(Kp), Ti(Ti) {}
@@ -25,3 +28,5 @@ class PI_controller {
     double u = 0;
     double Ti;
 };
+
+#endif

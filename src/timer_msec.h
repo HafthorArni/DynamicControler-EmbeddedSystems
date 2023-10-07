@@ -1,4 +1,5 @@
-#pragma once
+#ifndef TIMER_MSEC_H
+#define TIMER_MSEC_H
 
 class Timer_msec
 {
@@ -10,3 +11,4 @@ public:
     void initTimer2(int period_ms);
 };
 
+#endif

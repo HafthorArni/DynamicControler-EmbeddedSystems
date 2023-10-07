@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CONTEXT_H
+#define CONTEXT_H
 #include <State.h>
 #include <Arduino.h>
 
@@ -44,3 +45,5 @@ public:
 
   void on_operational();
 };
+
+#endif
