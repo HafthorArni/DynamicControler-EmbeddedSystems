@@ -9,6 +9,7 @@
 #include <States.h>
 // #include "P_controller.h"
 
+StateVariables stateVars;
 
 Timer_msec timer;
 Digital_out motorIN2(0); //         pin D8
@@ -18,6 +19,8 @@ float kp = 0.01;
 float ti = 5;
 PI_controller controller(kp,ti);
 // P_controller controller(kp);
+
+
 Context *context;
 
 
@@ -29,7 +32,10 @@ double actual = 0;
 double pwmValue = 0;
 double u = 0;
 
+
+
 int main(){  
+
     init();// Initialize Arduino framework
     Serial.begin(9600);  
     _delay_ms(3000);

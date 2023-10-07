@@ -5,8 +5,7 @@
 #include <State.h>
 #include <analog_out.h>
 
-class StateVariables {
-public:
+struct StateVariables {
     bool pre;
     bool op;
     bool flt;
@@ -16,9 +15,11 @@ public:
     StateVariables() : led(5) {} // Initialize the analog_out in the constructor
 };
 
+extern StateVariables stateVars;
+
 class Initialization : public State {
     public:
-    StateVariables stateVars;
+    
 
     void on_do();
     void on_entry();
@@ -30,7 +31,6 @@ class Initialization : public State {
 };
 class PreOperational : public State {
     public:
-    StateVariables stateVars;
 
     void on_do();
     void on_entry();
@@ -43,7 +43,6 @@ class PreOperational : public State {
 
 class Operational : public State {
     public:
-    StateVariables stateVars;
 
     void on_do();
     void on_entry();
@@ -56,7 +55,6 @@ class Operational : public State {
 
 class Stopped : public State {
     public:
-    StateVariables stateVars;
 
     void on_do();
     void on_entry();
