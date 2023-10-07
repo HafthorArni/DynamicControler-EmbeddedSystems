@@ -20,6 +20,7 @@ struct StateVariables {
     double u = 0;
     int analogPin = A3; 
     unsigned long lastPrintTime = 0;
+    int faultCount = 0;
     bool faultDetected = false;
     unsigned long faultStartTime = 0;
     Timer_msec timer;

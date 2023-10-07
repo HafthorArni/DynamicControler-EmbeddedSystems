@@ -90,18 +90,16 @@ void PreOperational::on_timeout(){
 
 void Operational::on_do() 
 {       
-        stateVars.flt = false;
         if (stateVars.faultPin.is_lo()){
-            if (!stateVars.flt) {
-                stateVars.faultStartTime = millis();
-                stateVars.flt = true;
-            }
-        } else {
-            stateVars.flt = false;
+            stateVars.faultCount++;
+
+        } else if (stateVars.faultCount > 0) {
+            stateVars.faultCount-=10;
         }
 
-        if (stateVars.flt && (millis() - stateVars.faultStartTime >= 1000)) {
+        if (stateVars.faultCount > 50) {
             Serial.println("fault");
+            stateVars.faultCount = 0;
             stateVars.flt = true;
         }
 
@@ -110,7 +108,7 @@ void Operational::on_do()
         this->context_->command_go();
     }
     if (stateVars.flt){
-        //this->context_->command_go();
+        this->context_->command_go();
     }
     stateVars.ref = (analogRead(stateVars.analogPin)/1023.0)*120;
     stateVars.actual = abs(stateVars.encoder.speed());
