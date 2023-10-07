@@ -30,11 +30,12 @@ double pwmValue = 0;
 double u = 0;
 
 int main(){  
-    context = new Context(new Initialization);
-    context->do_work();
-    context->timeout(); //Gera þetta ef að fault kemur
     init();// Initialize Arduino framework
     Serial.begin(9600);  
+    _delay_ms(3000);
+    context = new Context(new Initialization);
+    context->do_work();
+    //context->timeout(); //Gera þetta ef að fault kemur
     timer.init(0.1); // ms
     sei();  // enable interrupts
 
