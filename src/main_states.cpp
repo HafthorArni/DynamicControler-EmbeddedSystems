@@ -29,7 +29,6 @@ int main(){
         _delay_ms(3);
         if (Serial.available()) {
             stateVars.c = Serial.read();
-            Serial.println("GOT INPUT!");
             context->command_go();
         }
     }

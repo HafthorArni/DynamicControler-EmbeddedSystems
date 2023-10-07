@@ -52,6 +52,7 @@ void PreOperational::on_do()
     if (stateVars.flt){
         this->context_->command_stop();
     }
+    
 }
 void PreOperational::on_entry()
 {
@@ -78,6 +79,34 @@ void PreOperational::on_command_go()
         stateVars.pre = true;
         Serial.println("PRE:Stop command detected - Stopping");
         this->context_->transition_to(new Stopped);
+    }
+    if (stateVars.c == '7') {
+        stateVars.kp += 0.001; // increase Kp
+        Serial.print("Kp = ");
+        Serial.println(stateVars.kp,3);
+    } 
+    if ((stateVars.c == '1') && (stateVars.kp-0.001 > 0)){
+        stateVars.kp -= 0.001; // decrease Kp
+        Serial.print("Kp = ");
+        Serial.println(stateVars.kp,3);
+    }
+    if (stateVars.c == '9') {
+        stateVars.ti += 0.01; // increase Ti
+        Serial.print("Ti = ");
+        Serial.println(stateVars.ti,3);
+    }
+    if ((stateVars.c == '3') && (stateVars.ti-0.01 > 0)) {
+        stateVars.ti -= 0.01;// decrease Ti
+        Serial.print("Ti = ");
+        Serial.println(stateVars.ti,3);
+    } 
+    if (stateVars.c == 'i') {
+        stateVars.do_integration = !stateVars.do_integration;
+        if (stateVars.do_integration) {
+            Serial.println("PI control selected");
+        } else {
+            Serial.println("P control selected");
+        }
     }
 }
 
@@ -112,7 +141,13 @@ void Operational::on_do()
     }
     stateVars.ref = (analogRead(stateVars.analogPin)/1023.0)*120;
     stateVars.actual = abs(stateVars.encoder.speed());
-    stateVars.u = stateVars.controller.update(stateVars.ref, stateVars.actual);
+
+    if (stateVars.do_integration) {
+        stateVars.u = stateVars.controllerPI.update(stateVars.ref, stateVars.actual);
+    } else {
+        stateVars.u = stateVars.controllerP.update(stateVars.ref, stateVars.actual);
+    }
+
     stateVars.u = constrain(stateVars.u, 0.0, 0.999); // Ensure pwmValue is within [0, 1]
     stateVars.pwmValue = stateVars.u;
     stateVars.motorIN1.set(stateVars.pwmValue);

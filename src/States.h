@@ -6,14 +6,15 @@
 #include <analog_out.h>
 #include <encoder.h>
 #include <PI_controller.h>
+#include <P_controller.h>
 
 struct StateVariables {
     bool pre;
     bool op;
     bool flt;
     char c;
-    float kp = 0.01;
-    float ti = 5;
+    float kp = 0.007;
+    float ti = 0.21;
     double ref = 0;
     double actual = 0;
     double pwmValue = 0;
@@ -22,6 +23,7 @@ struct StateVariables {
     unsigned long lastPrintTime = 0;
     int faultCount = 0;
     bool faultDetected = false;
+    bool do_integration = true;
     unsigned long faultStartTime = 0;
     Timer_msec timer;
     Digital_in faultPin;  // flt     pin D3
@@ -29,9 +31,10 @@ struct StateVariables {
     Analog_out motorIN1;  // PWM     pin D9
     Encoder encoder;   // encoder pin D11 D12
     Analog_out led;
-    PI_controller controller;
+    PI_controller controllerPI;
+    P_controller controllerP;
 
-    StateVariables() : led(5), motorIN1(1), motorIN2(0), encoder(3,4), controller(kp, ti), faultPin(3) {} // Initialize the analog_out in the constructor
+    StateVariables() : led(5), motorIN1(1), motorIN2(0), encoder(3,4), controllerPI(kp, ti), controllerP(kp), faultPin(3) {} // Initialize the analog_out in the constructor
 };
 
 extern StateVariables stateVars;
