@@ -143,9 +143,9 @@ void Operational::on_do()
     stateVars.actual = abs(stateVars.encoder.speed());
 
     if (stateVars.do_integration) {
-        stateVars.u = stateVars.controllerPI.update(stateVars.ref, stateVars.actual);
+        stateVars.u = stateVars.PIcontroller.update(stateVars.ref, stateVars.actual);
     } else {
-        stateVars.u = stateVars.controllerP.update(stateVars.ref, stateVars.actual);
+        stateVars.u = stateVars.Pcontroller.update(stateVars.ref, stateVars.actual);
     }
 
     stateVars.u = constrain(stateVars.u, 0.0, 0.999); // Ensure pwmValue is within [0, 1]

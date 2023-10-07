@@ -6,7 +6,6 @@
 #include <analog_out.h>
 #include <encoder.h>
 #include <PI_controller.h>
-#include <P_controller.h>
 
 struct StateVariables {
     bool pre;
@@ -31,10 +30,10 @@ struct StateVariables {
     Analog_out motorIN1;  // PWM     pin D9
     Encoder encoder;   // encoder pin D11 D12
     Analog_out led;
-    PI_controller controllerPI;
-    P_controller controllerP;
+    PI_controller PIcontroller;
+    P_controller Pcontroller;
 
-    StateVariables() : led(5), motorIN1(1), motorIN2(0), encoder(3,4), controllerPI(kp, ti), controllerP(kp), faultPin(3) {} // Initialize the analog_out in the constructor
+    StateVariables() : led(5), motorIN1(1), motorIN2(0), encoder(3,4), PIcontroller(kp, ti), Pcontroller(kp), faultPin(3) {} // Initialize the analog_out in the constructor
 };
 
 extern StateVariables stateVars;
