@@ -10,83 +10,44 @@
 // #include "P_controller.h"
 
 StateVariables stateVars;
-
-Timer_msec timer;
-Digital_out motorIN2(0); //         pin D8
-Analog_out motorIN1(1);  // PWM     pin D9
-Encoder encoder(3, 4);   // encoder pin D11 D12
-float kp = 0.01;
-float ti = 5;
-PI_controller controller(kp,ti);
-// P_controller controller(kp);
-
-
 Context *context;
-
-
-unsigned long lastPrintTime = 0;
-
-int analogPin = A3; 
-double ref = 0;
-double actual = 0;
-double pwmValue = 0;
-double u = 0;
-
-
 
 int main(){  
 
     init();// Initialize Arduino framework
     Serial.begin(9600);  
-    _delay_ms(3000);
+    _delay_ms(1000);
     context = new Context(new Initialization);
-    context->do_work();
+    
     //context->timeout(); //Gera þetta ef að fault kemur
-    timer.init(0.1); // ms
     sei();  // enable interrupts
 
-    encoder.init();
-    motorIN2.init();
-    motorIN1.init(10);  // ms
-    motorIN1.set(0);  // duty cycle
-    motorIN2.set_lo();
-    
-    while(1){
-        ref = (analogRead(analogPin)/1023.0)*120;
-        actual = abs(encoder.speed());
-        u = controller.update(ref, actual);
-        u = constrain(u, 0.0, 0.999); // Ensure pwmValue is within [0, 1]
-        pwmValue = u;
-        motorIN1.set(pwmValue);
-        if (millis() - lastPrintTime >= 250) {  
-            Serial.print("speed: (");
-            Serial.print("Ref: ");
-            Serial.print(ref);
-            Serial.print(" - Act: ");
-            Serial.print(actual);
-            Serial.print(") [RPM], ");
-            Serial.print(" duty cycle: ");
-            Serial.print(pwmValue);
-            Serial.print(" u: ");
-            Serial.println(u);
-            lastPrintTime = millis();  
-        }
-        encoder.update();
+    while(1) {
+        context->do_work();
+        stateVars.c = '0';
+
         _delay_ms(3);
-}
+        if (Serial.available()) {
+            stateVars.c = Serial.read();
+            Serial.println("GOT INPUT!");
+            context->command_go();
+        }
+    }
     return 0;
 }
 
 ISR (INT0_vect){
-    encoder.update();
+    stateVars.encoder.update();
 }
 
 ISR(TIMER1_COMPA_vect){
     // encoder.update();
-    motorIN1.pin.set_hi();      
+    stateVars.motorIN1.pin.set_hi();
+    stateVars.led.pin.set_hi();
 }
 
 ISR(TIMER1_COMPB_vect){
     // encoder.update();
-    motorIN1.pin.set_lo(); 
+    stateVars.motorIN1.pin.set_lo(); 
+    stateVars.led.pin.set_lo();
 }

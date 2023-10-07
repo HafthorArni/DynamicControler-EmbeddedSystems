@@ -1,21 +1,23 @@
 #include <States.h>
+#include <Arduino.h>
 
 void Initialization::on_do()
 {
-    on_entry();
+    //on_entry();
 }
 void Initialization::on_entry()
 {
-    Serial.println("Turning off LED");
-    stateVars.led.init(10000.0);
-    stateVars.led.pin.set_lo();
-    Serial.println("Initializing c");
-    Serial.println("Setting pre = false");
+    Serial.println("Init_entry");
+    //stateVars.led.init(1000.0);
+    //stateVars.led.set(0.001);
     stateVars.pre = false;
-    Serial.println("Setting op = true");
     stateVars.op = true;
-    Serial.println("Setting FLT = false");
     stateVars.flt = false;
+
+    stateVars.encoder.init();
+    stateVars.motorIN2.init();
+    stateVars.motorIN1.init(10);  // ms
+
     this->context_->command_go();
     
 }
@@ -25,7 +27,7 @@ void Initialization::on_exit()
 }
 void Initialization::on_command_go()
 {
-    Serial.println("IN:op = true - We are operational");
+    Serial.println("Automatically go to PreOperational state");
     this->context_->transition_to(new PreOperational);
 }
 
@@ -43,12 +45,7 @@ void Initialization::on_timeout()
 
 void PreOperational::on_do()
 {
-    Serial.println("Doing fault check");
-
-    Serial.println("Setting c = '0'");
-    stateVars.c = '0';
-    Serial.println("Reading into c from keyboard");
-    stateVars.c = Serial.read();
+    stateVars.motorIN1.set(0.00001);
     if (stateVars.c == 'o' || stateVars.c == 'r'){
         this->context_->command_go();
     }
@@ -58,9 +55,9 @@ void PreOperational::on_do()
 }
 void PreOperational::on_entry()
 {
+    Serial.println("PreOperational entry");
     Serial.println("Blinking LED at 1 Hz");
-    stateVars.led.set(0.1);
-    Serial.println("Setting pre = true");
+    //stateVars.led.set(0.5);
     stateVars.pre = true;
 }
 void PreOperational::on_exit()
@@ -69,7 +66,6 @@ void PreOperational::on_exit()
 }
 void PreOperational::on_command_go()
 {
-    Serial.println("PRE:Leaving pre");
     if (stateVars.c == 'o'){
         Serial.println("Going to OP");
         this->context_->transition_to(new Operational);
@@ -78,39 +74,75 @@ void PreOperational::on_command_go()
         Serial.println("Going to IN");
         this->context_->transition_to(new Initialization);
     }
+    if (stateVars.flt == true) {
+        stateVars.pre = true;
+        Serial.println("PRE:Stop command detected - Stopping");
+        this->context_->transition_to(new Stopped);
+    }
 }
 
 void PreOperational::on_command_stop()
 {
-    Serial.println("PRE:Stop command detected - Stopping");
-    this->context_->transition_to(new Stopped);
 }
 
 void PreOperational::on_timeout(){
-    stateVars.flt = true;
 }
 
 void Operational::on_do() 
 {
-    Serial.println("Doing fault check");
+        if (stateVars.faultPin.is_lo()){
+            if (!stateVars.flt) {
+                stateVars.faultStartTime = millis();
+                stateVars.flt = true;
+            }
+        } else {
+            stateVars.flt = false;
+        }
 
-    Serial.println("Setting c = '0'");
-    stateVars.c = '0';
-    Serial.println("Reading into c from keyboard");
-    stateVars.c = Serial.read();
+        if (stateVars.flt && (millis() - stateVars.faultStartTime >= 100)) {
+            Serial.println("fault");
+            stateVars.flt = false;
+        }
+
+
     if (stateVars.c == 'p' || stateVars.c == 'r'){
         this->context_->command_go();
     }
     if (stateVars.flt){
         this->context_->command_stop();
     }
+    stateVars.ref = (analogRead(stateVars.analogPin)/1023.0)*120;
+    stateVars.actual = abs(stateVars.encoder.speed());
+    stateVars.u = stateVars.controller.update(stateVars.ref, stateVars.actual);
+    stateVars.u = constrain(stateVars.u, 0.0, 0.999); // Ensure pwmValue is within [0, 1]
+    stateVars.pwmValue = stateVars.u;
+    stateVars.motorIN1.set(stateVars.pwmValue);
+    if (millis() - stateVars.lastPrintTime >= 250) {  
+        Serial.print("speed: (");
+        Serial.print("Ref: ");
+        Serial.print(stateVars.ref);
+        Serial.print(" - Act: ");
+        Serial.print(stateVars.actual);
+        Serial.print(") [RPM], ");
+        Serial.print(" duty cycle: ");
+        Serial.print(stateVars.pwmValue);
+        stateVars.lastPrintTime = millis();  
+    }
+    stateVars.encoder.update();
 }
 void Operational::on_entry() 
 {
+    Serial.println("Operational entry");
     Serial.println("Turning on LED");
-    stateVars.led.pin.set_hi();
-    Serial.println("Setting pre = false");
+    //stateVars.led.set(0.9999);
     stateVars.pre = false;
+    stateVars.timer.init(0.1); // ms
+    stateVars.encoder.init();
+    stateVars.motorIN2.init();
+    stateVars.motorIN1.init(10);  // ms
+    stateVars.faultPin.init();
+    stateVars.motorIN1.set(0.0001);  // duty cycle
+    stateVars.motorIN2.set_lo();
 }
 void Operational::on_exit() 
 {
@@ -118,7 +150,6 @@ void Operational::on_exit()
 }
 void Operational::on_command_go()
 {
-    Serial.println("OP:Leaving OP");
     if (stateVars.c == 'p'){
         Serial.println("Going to PRE");
         this->context_->transition_to(new PreOperational);
@@ -127,12 +158,15 @@ void Operational::on_command_go()
         Serial.println("Going to IN");
         this->context_->transition_to(new Initialization);
     }
+    if (stateVars.flt == true) {
+        stateVars.pre = false;
+        Serial.println("OP:Stop command detected - Stopping");
+        this->context_->transition_to(new Stopped);
+    }
 }
 
 void Operational::on_command_stop()
 {
-    Serial.println("OP:Stop command detected - Stopping");
-    this->context_->transition_to(new Stopped);
 }
 
 void Operational::on_timeout()
@@ -142,18 +176,16 @@ void Operational::on_timeout()
 
 void Stopped::on_do() 
 {
-    Serial.println("Setting c = '0'");
-    stateVars.c = '0';
-    Serial.println("Reading into c from keyboard");
-    stateVars.c = Serial.read();
     if (stateVars.c == 'c'){
         this->context_->command_go();
     }
 }
 void Stopped::on_entry() 
 {
+    stateVars.motorIN1.set(0.00001);
+    Serial.println("Stopped! waiting for 'c'");
     Serial.println("Blinking LED at 2 Hz");
-    stateVars.led.set(0.2);
+    //stateVars.led.set(0.2);
 }
 void Stopped::on_exit() 
 {
@@ -162,16 +194,16 @@ void Stopped::on_exit()
 }
 void Stopped::on_command_go() 
 {
-}
-
-void Stopped::on_command_stop() 
-{
     Serial.println("STO:Continue command detected - Continue");
     if (stateVars.pre){
         this->context_->transition_to(new PreOperational);
     } else{
         this->context_->transition_to(new Operational);
     }
+}
+
+void Stopped::on_command_stop() 
+{
 }
 
 void Stopped::on_timeout()
