@@ -10,6 +10,11 @@ class PI_controller {
       u = P+I;
       return u;
     }
+    double get_integral() {
+      return E;
+    }
+    
+  
 
   private:
     double P;
